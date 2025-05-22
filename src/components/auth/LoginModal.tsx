@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Telegram, Wallet } from "lucide-react";
+import { MessagesSquare, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -142,7 +142,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 className="w-full h-20 bg-gmgn-gray-800 hover:bg-gmgn-gray-700 rounded-lg flex flex-col items-center justify-center"
                 variant="outline"
               >
-                <Telegram className="h-8 w-8 text-blue-400" />
+                <MessagesSquare className="h-8 w-8 text-blue-400" />
                 <span className="text-xs text-gray-300 mt-1">Telegram</span>
               </Button>
             </div>
