@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { MessagesSquare, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -132,7 +131,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               <div className="w-full border-t border-gmgn-gray-700"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-gmgn-gray-900 text-gray-400 text-lg">OR</span>
+              <span className="px-4 bg-gmgn-gray-900 text-gray-400 text-lg">
+                OR
+              </span>
             </div>
           </div>
 
@@ -195,7 +196,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           <div className="text-center mt-6">
             <p className="text-gray-400">
               Don't have an account yet?{" "}
-              <a href="#" className="text-gmgn-green hover:underline font-medium">
+              <a
+                href="#"
+                className="text-gmgn-green hover:underline font-medium"
+              >
                 Sign Up Now
               </a>
             </p>
