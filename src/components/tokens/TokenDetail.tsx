@@ -41,22 +41,16 @@ function synthesizeOHLC(prices) {
 }
 
 // Minimal SVG Candlestick Chart
-function MiniCandlestickChart({ prices, width = 320, height = 120 }) {
-  const ohlc = synthesizeOHLC(prices);
-  if (!ohlc.length)
-    return (
-      <div className="flex items-center justify-center h-full text-gray-500">
-        No data
-      </div>
-    );
-  const max = Math.max(...ohlc.map((c) => c.high));
-  const min = Math.min(...ohlc.map((c) => c.low));
+function MiniCandlestickChart({ ohlcData, width = 320, height = 120 }) {
+  if (!ohlcData.length) return <div>No data</div>;
+  const max = Math.max(...ohlcData.map((c) => c.high));
+  const min = Math.min(...ohlcData.map((c) => c.low));
   const range = max - min || 1;
-  const candleWidth = (width / ohlc.length) * 0.6;
+  const candleWidth = (width / ohlcData.length) * 0.6;
   return (
-    <svg width={width} height={height} className="w-full h-full">
-      {ohlc.map((c, i) => {
-        const x = (i + 0.5) * (width / ohlc.length);
+    <svg width={width} height={height}>
+      {ohlcData.map((c, i) => {
+        const x = (i + 0.5) * (width / ohlcData.length);
         const yOpen = height - ((c.open - min) / range) * height;
         const yClose = height - ((c.close - min) / range) * height;
         const yHigh = height - ((c.high - min) / range) * height;
@@ -64,7 +58,6 @@ function MiniCandlestickChart({ prices, width = 320, height = 120 }) {
         const isUp = c.close >= c.open;
         return (
           <g key={i}>
-            {/* Wick */}
             <line
               x1={x}
               x2={x}
@@ -73,7 +66,6 @@ function MiniCandlestickChart({ prices, width = 320, height = 120 }) {
               stroke="#888"
               strokeWidth={2}
             />
-            {/* Body */}
             <rect
               x={x - candleWidth / 2}
               y={Math.min(yOpen, yClose)}
@@ -101,6 +93,7 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
   const [tab, setTab] = useState("activity");
   const isPriceUp = token.priceChange >= 0;
   const [priceHistory, setPriceHistory] = useState([]);
+  const [ohlcData, setOhlcData] = useState([]);
 
   useEffect(() => {
     Promise.all([
@@ -119,6 +112,18 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
       setPriceHistory(prices);
     });
   }, [token.id, timeframe]);
+
+  useEffect(() => {
+    fetch(CRYPTO_API_URL)
+      .then((r) => r.json())
+      .then((cryptos) => {
+        // Find by name (case-insensitive)
+        const entry = cryptos.find(
+          (c) => c.name.toLowerCase() === token.name.toLowerCase()
+        );
+        setOhlcData(entry && entry.ohlcData ? entry.ohlcData : []);
+      });
+  }, [token.name, timeframe]);
 
   const formattedPrice = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -262,7 +267,7 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
         </div>
 
         <div className="h-80 bg-gmgn-gray-900 rounded-lg mb-6 relative flex items-center justify-center">
-          <MiniCandlestickChart prices={priceHistory} />
+          <MiniCandlestickChart ohlcData={ohlcData} />
         </div>
 
         {token.warnings && (
