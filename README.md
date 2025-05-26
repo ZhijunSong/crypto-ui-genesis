@@ -1,58 +1,60 @@
-# Welcome to your Lovable project
+# Crypto UI Genesis
 
-## Project info
+## Overview
 
-**URL**: https://lovable.dev/projects/1a06b22b-9cc7-42f4-b4e3-7be0e6c1f291
+Crypto UI Genesis is a modern React + Vite web app for exploring and tracking crypto assets. It features a login page, a dashboard with trending tokens, and detailed token pages with interactive charts. The UI is styled with Tailwind CSS and shadcn-ui components.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Project Structure & Page Relations
 
-**Use Lovable**
+- **src/App.tsx**: Main entry, sets up routing for all pages.
+- **src/pages/LoginPage.tsx**: Login form, authenticates users via the users API.
+- **src/pages/Index.tsx**: Dashboard/homepage, lists trending tokens and allows navigation to token details.
+- **src/pages/TokenDetailPage.tsx**: Loads token details by slug (name or id) from the URL, fetches token data, and renders the detail view.
+- **src/components/tokens/TokenRow.tsx**: Renders a summary row for each token in the dashboard.
+- **src/components/tokens/TokenDetail.tsx**: Shows detailed info and a candlestick chart for a token, fetching price history from APIs.
+- **src/pages/NotFound.tsx**: 404 page for unmatched routes.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1a06b22b-9cc7-42f4-b4e3-7be0e6c1f291) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## API Usage
 
-**Use your preferred IDE**
+### 1. User Login
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Endpoint:** `https://682fe7f8f504aa3c70f599c3.mockapi.io/api/web3gmgn/users`
+- **Usage:**
+  - The Login page fetches all users and checks credentials on form submit.
+  - On success, redirects to the dashboard (Index page).
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 2. Dashboard Data
 
-Follow these steps:
+- **Endpoint:** `https://682fe7f8f504aa3c70f599c3.mockapi.io/api/web3gmgn/dashboardData`
+- **Usage:**
+  - The Index page fetches dashboard data on load.
+  - Each dashboard entry contains a list of `cryptoAssets` (tokens) with summary info (name, symbol, price, liquidity, market cap, etc).
+  - Tokens are displayed using `TokenRow`. Clicking a token navigates to its detail page.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 3. Token Details & Chart Data
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- **Endpoint:** `https://682fe7f8f504aa3c70f599c3.mockapi.io/api/web3gmgn/cryptocurrencies`
+- **Usage:**
+  - The TokenDetailPage fetches all tokens and finds the one matching the URL slug (by name or id).
+  - Passes token data to `TokenDetail` for display.
+  - `TokenDetail` fetches price history from both the dashboard and cryptocurrencies APIs, combines the data, and synthesizes fake OHLC (open, high, low, close) data from price points to render a demo candlestick chart.
 
-# Step 3: Install the necessary dependencies.
-npm i
+---
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## Navigation Flow
 
-**Edit a file directly in GitHub**
+- **Login:** `/login` → On success, redirects to `/` (dashboard).
+- **Dashboard:** `/` (or `/trending`, `/trenches`, etc) → Lists tokens. Clicking a token navigates to `/token/:slug`.
+- **Token Detail:** `/token/:slug` → Loads and displays detailed info and chart for the selected token.
+- **404:** Any unmatched route shows the NotFound page.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
+## Technologies Used
 
 - Vite
 - TypeScript
@@ -60,14 +62,32 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/1a06b22b-9cc7-42f4-b4e3-7be0e6c1f291) and click on Share -> Publish.
+## Chart Logic
 
-## Can I connect a custom domain to my Lovable project?
+- The candlestick chart on the token detail page is synthesized from available price points (since the API does not provide OHLC data).
+- Each candle is generated from a sliding window of 4 price points (open, high, low, close).
+- The chart is rendered as a minimal SVG for performance and clarity.
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Running & Editing
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+1. **Clone the repo:**
+   ```sh
+   git clone <YOUR_GIT_URL>
+   cd <YOUR_PROJECT_NAME>
+   npm i
+   npm run dev
+   ```
+2. **Edit in your IDE or via Lovable.**
+3. **Deploy:** Use Lovable's Share → Publish feature.
+
+---
+
+## Custom Domain
+
+You can connect a custom domain via Lovable Project > Settings > Domains.
+
+For more, see [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
