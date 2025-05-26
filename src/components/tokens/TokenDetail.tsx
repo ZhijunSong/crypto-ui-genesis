@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 type TokenDetailProps = {
@@ -24,16 +23,108 @@ type TokenDetailProps = {
   };
 };
 
+// Helper to synthesize OHLC data from price array
+function synthesizeOHLC(prices) {
+  // Use a sliding window of 4 for each candle
+  const ohlc = [];
+  for (let i = 0; i < prices.length - 3; i += 4) {
+    const window = prices.slice(i, i + 4);
+    if (window.length < 4) break;
+    ohlc.push({
+      open: window[0],
+      high: Math.max(...window),
+      low: Math.min(...window),
+      close: window[3],
+    });
+  }
+  return ohlc;
+}
+
+// Minimal SVG Candlestick Chart
+function MiniCandlestickChart({ prices, width = 320, height = 120 }) {
+  const ohlc = synthesizeOHLC(prices);
+  if (!ohlc.length)
+    return (
+      <div className="flex items-center justify-center h-full text-gray-500">
+        No data
+      </div>
+    );
+  const max = Math.max(...ohlc.map((c) => c.high));
+  const min = Math.min(...ohlc.map((c) => c.low));
+  const range = max - min || 1;
+  const candleWidth = (width / ohlc.length) * 0.6;
+  return (
+    <svg width={width} height={height} className="w-full h-full">
+      {ohlc.map((c, i) => {
+        const x = (i + 0.5) * (width / ohlc.length);
+        const yOpen = height - ((c.open - min) / range) * height;
+        const yClose = height - ((c.close - min) / range) * height;
+        const yHigh = height - ((c.high - min) / range) * height;
+        const yLow = height - ((c.low - min) / range) * height;
+        const isUp = c.close >= c.open;
+        return (
+          <g key={i}>
+            {/* Wick */}
+            <line
+              x1={x}
+              x2={x}
+              y1={yHigh}
+              y2={yLow}
+              stroke="#888"
+              strokeWidth={2}
+            />
+            {/* Body */}
+            <rect
+              x={x - candleWidth / 2}
+              y={Math.min(yOpen, yClose)}
+              width={candleWidth}
+              height={Math.abs(yClose - yOpen) || 2}
+              fill={isUp ? "#4ade80" : "#f87171"}
+              stroke="#222"
+              strokeWidth={1}
+              rx={2}
+            />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+const DASHBOARD_API_URL =
+  "https://682fe7f8f504aa3c70f599c3.mockapi.io/api/web3gmgn/dashboardData";
+const CRYPTO_API_URL =
+  "https://682fe7f8f504aa3c70f599c3.mockapi.io/api/web3gmgn/cryptocurrencies";
+
 const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
   const [timeframe, setTimeframe] = useState("1h");
   const [tab, setTab] = useState("activity");
   const isPriceUp = token.priceChange >= 0;
-  
+  const [priceHistory, setPriceHistory] = useState([]);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(DASHBOARD_API_URL).then((r) => r.json()),
+      fetch(CRYPTO_API_URL).then((r) => r.json()),
+    ]).then(([dashboard, cryptos]) => {
+      let prices = [];
+      dashboard.forEach((entry) => {
+        const asset = (entry.cryptoAssets || []).find((a) => a.id === token.id);
+        if (asset && asset.currentPriceUSD) prices.push(asset.currentPriceUSD);
+      });
+      cryptos.forEach((entry) => {
+        const asset = (entry.cryptoAssets || []).find((a) => a.id === token.id);
+        if (asset && asset.currentPriceUSD) prices.push(asset.currentPriceUSD);
+      });
+      setPriceHistory(prices);
+    });
+  }, [token.id, timeframe]);
+
   const formattedPrice = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: 5,
-    maximumFractionDigits: 5,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(token.price);
 
   return (
@@ -55,7 +146,7 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
               />
             </svg>
           </button>
-          
+
           <div className="flex-shrink-0 w-12 h-12 mr-3 rounded-full overflow-hidden">
             <img
               src={token.image || "/placeholder.svg"}
@@ -63,7 +154,7 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
               className="w-full h-full object-cover"
             />
           </div>
-          
+
           <div>
             <div className="flex items-center">
               <h2 className="text-xl font-bold text-white">{token.name}</h2>
@@ -95,7 +186,7 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center">
           <button className="p-2">
             <svg
@@ -114,61 +205,85 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
           </button>
         </div>
       </div>
-      
+
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
-          <div className="text-4xl font-bold text-gmgn-green">{formattedPrice}</div>
+          <div className="text-4xl font-bold text-gmgn-green">
+            {formattedPrice}
+          </div>
           <span className="text-gray-400 font-medium">HODL</span>
         </div>
-        
+
         <div className="flex flex-wrap gap-2 mb-6">
-          <Button 
-            className={`px-4 py-2 font-medium rounded-full ${timeframe === "1m" ? "bg-gmgn-gray-700 text-white" : "bg-gmgn-gray-800 text-gray-400"}`}
+          <Button
+            className={`px-4 py-2 font-medium rounded-full ${
+              timeframe === "1m"
+                ? "bg-gmgn-gray-700 text-white"
+                : "bg-gmgn-gray-800 text-gray-400"
+            }`}
             onClick={() => setTimeframe("1m")}
             variant="ghost"
           >
             1m
           </Button>
-          <Button 
-            className={`px-4 py-2 font-medium rounded-full ${timeframe === "5m" ? "bg-gmgn-gray-700 text-white" : "bg-gmgn-gray-800 text-gray-400"}`}
+          <Button
+            className={`px-4 py-2 font-medium rounded-full ${
+              timeframe === "5m"
+                ? "bg-gmgn-gray-700 text-white"
+                : "bg-gmgn-gray-800 text-gray-400"
+            }`}
             onClick={() => setTimeframe("5m")}
             variant="ghost"
           >
             5m
           </Button>
-          <Button 
-            className={`px-4 py-2 font-medium rounded-full ${timeframe === "1h" ? "bg-gmgn-gray-700 text-white" : "bg-gmgn-gray-800 text-gray-400"}`}
+          <Button
+            className={`px-4 py-2 font-medium rounded-full ${
+              timeframe === "1h"
+                ? "bg-gmgn-gray-700 text-white"
+                : "bg-gmgn-gray-800 text-gray-400"
+            }`}
             onClick={() => setTimeframe("1h")}
             variant="ghost"
           >
             1h
           </Button>
-          <Button 
-            className={`px-4 py-2 font-medium rounded-full ${timeframe === "24h" ? "bg-gmgn-gray-700 text-white" : "bg-gmgn-gray-800 text-gray-400"}`}
+          <Button
+            className={`px-4 py-2 font-medium rounded-full ${
+              timeframe === "24h"
+                ? "bg-gmgn-gray-700 text-white"
+                : "bg-gmgn-gray-800 text-gray-400"
+            }`}
             onClick={() => setTimeframe("24h")}
             variant="ghost"
           >
             24h
           </Button>
         </div>
-        
-        <div className="h-80 bg-gmgn-gray-900 rounded-lg mb-6 relative">
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-500 text-lg">
-            [Chart Placeholder]
-          </div>
+
+        <div className="h-80 bg-gmgn-gray-900 rounded-lg mb-6 relative flex items-center justify-center">
+          <MiniCandlestickChart prices={priceHistory} />
         </div>
-        
+
         {token.warnings && (
           <div className="mb-6">
             <h3 className="text-xl font-medium mb-2">PUMP Pool info</h3>
             <div className="bg-gmgn-gray-800 rounded-lg p-4 space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-400">Total liq</span>
-                <span className="text-white">${token.totalLiquidity?.toFixed(2)} ({token.totalLiquidity ? (token.totalLiquidity * 0.0028).toFixed(2) : "0"} SOL)</span>
+                <span className="text-white">
+                  ${token.totalLiquidity?.toFixed(2)} (
+                  {token.totalLiquidity
+                    ? (token.totalLiquidity * 0.0028).toFixed(2)
+                    : "0"}{" "}
+                  SOL)
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Market cap</span>
-                <span className="text-white">${token.marketCap?.toLocaleString()}</span>
+                <span className="text-white">
+                  ${token.marketCap?.toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Holders</span>
@@ -183,14 +298,18 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
                 <span className="text-white">{token.poolCreated}</span>
               </div>
             </div>
-            
+
             <h3 className="text-xl font-medium mt-6 mb-2">Degen Audit</h3>
             <div className="bg-gmgn-gray-800 rounded-lg p-4 space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-400">NoMint</span>
                 <div className="flex items-center">
                   <span className="text-white mr-1">Yes</span>
-                  <svg className="w-5 h-5 text-gmgn-green" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-5 h-5 text-gmgn-green"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                   </svg>
                 </div>
@@ -199,7 +318,11 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
                 <span className="text-gray-400">Blacklist</span>
                 <div className="flex items-center">
                   <span className="text-white mr-1">No</span>
-                  <svg className="w-5 h-5 text-gmgn-green" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-5 h-5 text-gmgn-green"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                   </svg>
                 </div>
@@ -208,7 +331,11 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
                 <span className="text-gray-400">Burnt</span>
                 <div className="flex items-center">
                   <span className="text-white mr-1">Yes</span>
-                  <svg className="w-5 h-5 text-gmgn-green" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-5 h-5 text-gmgn-green"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                   </svg>
                 </div>
@@ -216,8 +343,14 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
               <div className="flex justify-between">
                 <span className="text-gray-400">Top 10</span>
                 <div className="flex items-center">
-                  <span className="text-white mr-1">{token.warnings.topHolders}</span>
-                  <svg className="w-5 h-5 text-gmgn-green" fill="currentColor" viewBox="0 0 24 24">
+                  <span className="text-white mr-1">
+                    {token.warnings.topHolders}
+                  </span>
+                  <svg
+                    className="w-5 h-5 text-gmgn-green"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                   </svg>
                 </div>
@@ -226,36 +359,44 @@ const TokenDetail: React.FC<TokenDetailProps> = ({ token }) => {
           </div>
         )}
       </div>
-      
+
       <div className="mt-auto border-t border-gmgn-gray-800">
         <div className="flex">
           <button
-            className={`flex-1 p-4 text-center ${tab === "activity" ? "text-white" : "text-gray-400"}`}
+            className={`flex-1 p-4 text-center ${
+              tab === "activity" ? "text-white" : "text-gray-400"
+            }`}
             onClick={() => setTab("activity")}
           >
             Activity
           </button>
           <button
-            className={`flex-1 p-4 text-center ${tab === "liquidity" ? "text-white" : "text-gray-400"}`}
+            className={`flex-1 p-4 text-center ${
+              tab === "liquidity" ? "text-white" : "text-gray-400"
+            }`}
             onClick={() => setTab("liquidity")}
           >
             Liquidity
           </button>
           <button
-            className={`flex-1 p-4 text-center ${tab === "traders" ? "text-white" : "text-gray-400"}`}
+            className={`flex-1 p-4 text-center ${
+              tab === "traders" ? "text-white" : "text-gray-400"
+            }`}
             onClick={() => setTab("traders")}
           >
             Traders
           </button>
           <button
-            className={`flex-1 p-4 text-center ${tab === "holders" ? "text-white" : "text-gray-400"}`}
+            className={`flex-1 p-4 text-center ${
+              tab === "holders" ? "text-white" : "text-gray-400"
+            }`}
             onClick={() => setTab("holders")}
           >
             Holders
           </button>
         </div>
       </div>
-      
+
       <div className="fixed bottom-0 left-0 right-0 flex border-t border-gmgn-gray-800 bg-gmgn-bg">
         <button className="flex-1 p-4 text-center">
           <div className="flex flex-col items-center">
