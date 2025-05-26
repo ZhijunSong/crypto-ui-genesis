@@ -82,8 +82,50 @@ const Index = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gmgn-bg text-white">
-      <Header />
-
+      <div className="flex items-center justify-between px-4 py-2">
+        <button
+          className="p-2 rounded-full bg-gmgn-gray-800 hover:bg-gmgn-gray-700 mr-2"
+          onClick={() => navigate("/")}
+          aria-label="Home"
+        >
+          <svg
+            width="28"
+            height="28"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path d="M3 12l9-9 9 9" stroke="#fff" strokeWidth="2" fill="none" />
+            <path d="M9 21V9h6v12" stroke="#fff" strokeWidth="2" fill="none" />
+          </svg>
+        </button>
+        <button
+          className="p-2 rounded-full bg-gmgn-gray-800 hover:bg-gmgn-gray-700 ml-auto"
+          onClick={() => navigate("/wallet")}
+          aria-label="My Wallet"
+        >
+          <svg
+            width="28"
+            height="28"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <rect
+              x="2"
+              y="7"
+              width="20"
+              height="14"
+              rx="3"
+              fill="#222"
+              stroke="#fff"
+            />
+            <circle cx="18" cy="14" r="2" fill="#4ade80" />
+          </svg>
+        </button>
+      </div>
       <NavTabs tabs={mockTabs} activeTab={activeTab} />
 
       {!selectedToken ? (

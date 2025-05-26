@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Wallet } from "lucide-react";
 
@@ -11,7 +10,7 @@ type HeaderProps = {
 const Header: React.FC<HeaderProps> = ({
   walletConnected = false,
   walletBalance = 0,
-  cryptoSymbol = "SOL"
+  cryptoSymbol = "SOL",
 }) => {
   return (
     <header className="flex items-center justify-between px-4 py-3 bg-gmgn-bg border-b border-gmgn-gray-800">
