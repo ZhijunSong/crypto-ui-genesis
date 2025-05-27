@@ -34,6 +34,7 @@ const Index = () => {
   const [activeTimeFilter, setActiveTimeFilter] = useState("1h");
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
+  const [user, setUser] = useState(null);
 
   // NEW: Dashboard data state
   const [dashboardData, setDashboardData] = useState<any[]>([]);
@@ -125,6 +126,32 @@ const Index = () => {
             <circle cx="18" cy="14" r="2" fill="#4ade80" />
           </svg>
         </button>
+        {user ? (
+          <div className="ml-2 flex items-center relative group">
+            <div className="w-9 h-9 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold text-lg cursor-pointer">
+              {/* Placeholder avatar, could use user.avatar if available */}
+              {user.name ? user.name[0].toUpperCase() : "U"}
+            </div>
+            <span className="ml-2 font-semibold text-white">{user.name}</span>
+            <div className="absolute right-0 mt-12 w-32 bg-gmgn-gray-900 rounded shadow-lg hidden group-hover:block z-10">
+              <button
+                className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gmgn-gray-800"
+                onClick={() => {
+                  setUser(null);
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            className="ml-2 px-4 py-2 bg-gmgn-green text-black rounded-lg font-bold hover:bg-green-400 transition"
+            onClick={() => setShowLoginModal(true)}
+          >
+            Login
+          </button>
+        )}
       </div>
       <NavTabs tabs={mockTabs} activeTab={activeTab} />
 
@@ -315,6 +342,7 @@ const Index = () => {
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
+        onLogin={setUser}
       />
     </div>
   );

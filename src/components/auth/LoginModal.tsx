@@ -6,14 +6,52 @@ import { Input } from "@/components/ui/input";
 type LoginModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  onLogin?: (user: any) => void;
 };
 
-const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
+const API_URL =
+  "https://682fe7f8f504aa3c70f599c3.mockapi.io/api/web3gmgn/users";
+
+const LoginModal: React.FC<LoginModalProps> = ({
+  isOpen,
+  onClose,
+  onLogin,
+}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleLogin = async () => {
+    setError("");
+    setSuccess("");
+    setLoading(true);
+    try {
+      const res = await fetch(API_URL);
+      const users = await res.json();
+      const user = users.find(
+        (u: any) => u.email === email && u.password === password
+      );
+      if (user) {
+        setSuccess("Login successful!");
+        setTimeout(() => {
+          setSuccess("");
+          if (onLogin) onLogin(user);
+          onClose();
+        }, 1000);
+      } else {
+        setError("Invalid email or password.");
+      }
+    } catch (err) {
+      setError("Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center px-4">
@@ -119,12 +157,15 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
           <Button
             className="w-full py-6 bg-gmgn-green hover:bg-green-500 text-black font-bold text-xl rounded-lg"
-            onClick={() => {
-              /* Handle login */
-            }}
+            onClick={handleLogin}
+            disabled={loading}
           >
-            Log In
+            {loading ? "Logging in..." : "Log In"}
           </Button>
+          {error && <div className="text-red-400 text-sm mt-2">{error}</div>}
+          {success && (
+            <div className="text-green-400 text-sm mt-2">{success}</div>
+          )}
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
